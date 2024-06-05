@@ -1,34 +1,55 @@
-import React from 'react';
+// src/App.js
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import Home from './Home';
-import DiseaseDetails from './DiseaseDetails';
+import DiseaseDetails from './components/DiseaseDetails';
 import Upload from './Upload';
+import Login from './components/Login';
+import Register from './components/Register';
+import Profile from './components/Profile';
+import ProtectedRoute from './components/ProtectedRoute';
+import { auth } from './firebase';
+import Footer from './components/Footer';
+import TechnologiesPage from './components/TechnologiesPage';
+import ModelSummary from './components/ModelSummary';
+import Navbar from './components/Navbar';
 
 function App() {
+  const [user, setUser] = useState(() => {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    return storedUser || null;
+  });
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleLogout = () => {
+    auth.signOut();
+    localStorage.removeItem('user');
+    setUser(null); // Clear user state
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-100">
-        <nav className="bg-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <Link to="/" className="font-semibold text-gray-800">Cauliflower Disease Detection</Link>
-              </div>
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-baseline space-x-4">
-                  <Link to="/" className="text-gray-800 hover:text-gray-600">Home</Link>
-                  <Link to="/upload" className="text-gray-800 hover:text-gray-600">Predict</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </nav>
+        <Navbar user={user} handleLogout={handleLogout} />
         <Routes>
-          <Route path="/" exact element={<Home/>} />
-          <Route path="/upload" element={<Upload/>} />
-          <Route path="/disease/:id" element={<DiseaseDetails/>} />
+          <Route path="/" element={<Home />} />
+          <Route path="/disease/:id" element={<DiseaseDetails />} />
+          <Route path="/technologies" element={<TechnologiesPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/upload" element={<ProtectedRoute element={Upload} />} />
+          <Route path="/profile" element={<ProtectedRoute element={Profile} />} />
+          <Route path="/model-summary" element={<ModelSummary />} />
         </Routes>
       </div>
+      <Footer />
     </Router>
   );
 }
